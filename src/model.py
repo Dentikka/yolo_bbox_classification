@@ -20,7 +20,9 @@ class BboxClassificationModel(nn.Module):
         self.emb_model.reset_classifier(0)  # a simpler way to get emb_model from a timm model
 
         self.classifier = nn.Sequential(
-            nn.Linear(self.emb_size, n_classes)
+            nn.Linear(self.emb_size, 20),
+            nn.ReLU(),
+            nn.Linear(20, n_classes)
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -28,6 +30,10 @@ class BboxClassificationModel(nn.Module):
         return self.classifier(emb)
 
     def set_backbone_state(self, state: str) -> None:
+        """
+        to freeze or unfreeze model backbone
+        state (str): one of 'freeze', 'unfreeze' 
+        """
         assert state in ['freeze', 'unfreeze']
         for param in self.emb_model.parameters():
             if state == 'freeze':
