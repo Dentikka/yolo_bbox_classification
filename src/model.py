@@ -2,6 +2,7 @@ import torch
 from torch import nn, Tensor
 
 import timm
+import fastervit
 
 
 class BboxClassificationModel(nn.Module):
@@ -9,15 +10,20 @@ class BboxClassificationModel(nn.Module):
     A class to make a model consisting of an embedding model (backbone)
     and classifier
     Currently maintained architectures are:
-        MobileNet, EfficientNet, ConvNext, ResNet, ViT
+        MobileNet, EfficientNet, ConvNext, ResNet, ViT, FasterViT
     """
     def __init__(self,
                  cfg_model: dict, 
                  n_classes: int):
         super().__init__()
-        self.emb_model = timm.create_model(cfg_model['model'], pretrained=cfg_model['pretrained'])
-        self.emb_size = self.emb_model.num_features
-        self.emb_model.reset_classifier(0)  # a simpler way to get emb_model from a timm model
+        if cfg_model['model'].lower().startswith('faster_vit'):
+            self.emb_model = fastervit.create_model(cfg_model['model'], pretrained=cfg_model['pretrained'])
+            self.emb_size = self.emb_model.head.in_features
+            self.emb_model.head = nn.Identity()
+        else:
+            self.emb_model = timm.create_model(cfg_model['model'], pretrained=cfg_model['pretrained'])
+            self.emb_size = self.emb_model.num_features
+            self.emb_model.reset_classifier(0)  # a simpler way to get emb_model from a timm model
 
         self.classifier = nn.Sequential(
             nn.Linear(self.emb_size, 20),
